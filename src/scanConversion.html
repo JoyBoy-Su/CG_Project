@@ -10,8 +10,6 @@
         var boundary = 0;       // 鼠标移动触发绘制的范围
         // TODO：维护一个可以直接由(x, y)计算得到move_index的数据结构
 
-        // TODO：只绘制与移动顶点相关的四边形
-
     </script>
 </head>
 <body>
@@ -22,8 +20,7 @@
 
         // mouse按下
         function canvasMouseDown(event) {
-            console.log("mouse down event = ", event);
-            // TODO：检查是否选中某个vertex，并标记vertex为对应序号
+            // 检查是否选中某个vertex，并标记vertex为对应序号
             for (var i = 0; i < vertex_pos.length; i++) {
                 vertex = vertex_pos[i];
                 // console.log("vertex ", i , " = ", vertex);
@@ -31,7 +28,6 @@
                 && (event.offsetY >= vertex[1] - range) && (event.offsetY <= vertex[1] + range)) {
                     move_index = i;
                     move = true;
-                    console.log("move = ", move, ", move index = ", move_index);
                     break;
                 }
             }
@@ -39,25 +35,21 @@
 
         // mouse移动
         function canvasMouseMove(event) {
-            // console.log("mouse move event = ", event);
             // 若move被标记，执行移动操作，并通过vertex确定移动的顶点
             if (move === true && move_index >= 0) {
                 // TODO：设置一定的响应范围，移动超过多少个像素才绘制
                 vertex = vertex_pos[move_index];
-                // console.log("vertex = ", vertex);
                 vertex[0] = event.offsetX;
                 vertex[1] = event.offsetY;
-                // console.log("vertex = ", vertex);
                 // clear
                 var cxt = document.getElementById("myCanvas").getContext("2d");
-                cxt.clearRect(-1, -1, canvas_obj.width, canvas_obj.height - 1);
+                cxt.clearRect(-1, -1, canvas_obj.width, canvas_obj.height);
                 drawCanvas(cxt, vertex_pos, polygon, vertex_color);
             }
         }
 
         // mouse松开
         function canvasMouseUp(event) {
-            // console.log("mouse up event = ", event);
             move = false;
             move_index = -1;
         }

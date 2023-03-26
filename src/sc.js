@@ -20,9 +20,9 @@ function drawPoint(cxt, x, y, color) {
 function drawLine(cxt, x1, y1, x2, y2, color) {
     cxt.beginPath();
     cxt.strokeStyle = "rgba(" + color[0] + "," +
-        +color[1] + "," +
-        +color[2] + "," +
-        +255 + ")";
+        + color[1] + "," +
+        + color[2] + "," +
+        + 255 + ")";
     //这里线宽取1会有色差，但是类似半透明的效果有利于debug，取2效果较好
     cxt.lineWidth = 1;
     cxt.moveTo(x1, y1);
@@ -33,14 +33,37 @@ function drawLine(cxt, x1, y1, x2, y2, color) {
 
 // 绘制一个圆
 function drawCircle(cxt, x, y, r, color) {
-    cxt.fillStyle = "rgba(" + color[0] + "," +
-        +color[1] + "," +
-        +color[2] + "," +
-        +255 + ")";
+    cxt.beginPath();
+    cxt.strokeStyle = "rgba(" + color[0] + "," +
+        + color[1] + "," +
+        + color[2] + "," +
+        + 255 + ")";
+    // 填充
+    let delta = 0.1;
+    for (var theta = 0; theta < Math.PI / 2; theta += delta) {
+        r_sin = r * Math.sin(theta);
+        r_cos = r * Math.cos(theta);
+        cxt.moveTo(x, y);
+        cxt.lineTo(x + r_sin, y + r_cos);
+        cxt.stroke();
+        cxt.moveTo(x, y);
+        cxt.lineTo(x + r_sin, y - r_cos);
+        cxt.stroke();
+        cxt.moveTo(x, y);
+        cxt.lineTo(x - r_sin, y + r_cos);
+        cxt.stroke();
+        cxt.moveTo(x, y);
+        cxt.lineTo(x - r_sin, y - r_cos);
+        cxt.stroke();
+    }
+    cxt.strokeStyle = "rgba(" + 0 + "," +
+        + 0 + "," +
+        + 0 + "," +
+        + 255 + ")";
     cxt.beginPath();
     cxt.arc(x, y, r, 0, Math.PI * 2, true);
     cxt.closePath();
-    cxt.fill();
+    cxt.stroke();
     // console.log("draw Circle done");
 }
 
@@ -80,10 +103,6 @@ function drawQuadrangle(cxt, vertexs, color) {
         x: (vertexs[3][1] > vertexs[0][1]) ? (vertexs[0][0]) : (vertexs[3][0]),
         delta: (vertexs[3][0] - vertexs[0][0]) / (vertexs[3][1] - vertexs[0][1])
     }
-    // console.log("edge1 = ", edge1);
-    // console.log("edge2 = ", edge2);
-    // console.log("edge3 = ", edge3);
-    // console.log("edge4 = ", edge4);
     if (edge1.y_max !== edge1.y_min) net[edge1.y_min - y_min].push(edge1);
     if (edge2.y_max !== edge2.y_min) net[edge2.y_min - y_min].push(edge2);
     if (edge3.y_max !== edge3.y_min) net[edge3.y_min - y_min].push(edge3);
@@ -91,29 +110,24 @@ function drawQuadrangle(cxt, vertexs, color) {
     // 定义AET
     let aet = [];
     for (let scan = y_min; scan <= y_max; scan++) {
-        // console.log("scan = ", scan);
         // 删除到达max的活性边并更新活性边
         for (let index = 0; index < aet.length; index++) {
             if (aet[index].y_max === scan) {
                 aet.splice(index, 1);
-                // console.log("remove");
                 index--;
             }
             else aet[index].x += aet[index].delta;
         }
         // 读net加入aet
         for (let index = 0; index < net[scan - y_min].length; index++) {
-            // console.log("edge =", net[scan][index]);
             aet.push(net[scan - y_min][index]);
         }
-        // console.log("aet = ", aet, "length = ", aet.length);
         // 两两读取aet中的x坐标画线
         aet.sort((a, b) => a.x - b.x);
         for (index = 0; index < aet.length; index += 2) {
             drawLine(cxt, aet[index].x, scan, aet[index + 1].x, scan, color);
         }
     }
-    // console.log("draw Quadrangle done");
 }
 
 function drawCanvas(cxt, vertex_pos, polygon, vertex_color) {
@@ -122,28 +136,24 @@ function drawCanvas(cxt, vertex_pos, polygon, vertex_color) {
         vertex_pos[polygon[0][0]], vertex_pos[polygon[0][1]],
         vertex_pos[polygon[0][2]], vertex_pos[polygon[0][3]]
     ];
-    // console.log(vertexs);
     drawQuadrangle(cxt, vertexs, vertex_color[0]);
 
     vertexs = [
         vertex_pos[polygon[1][0]], vertex_pos[polygon[1][1]],
         vertex_pos[polygon[1][2]], vertex_pos[polygon[1][3]]
     ];
-    // console.log(vertexs);
     drawQuadrangle(cxt, vertexs, vertex_color[1]);
 
     vertexs = [
         vertex_pos[polygon[2][0]], vertex_pos[polygon[2][1]],
         vertex_pos[polygon[2][2]], vertex_pos[polygon[2][3]]
     ];
-    // console.log(vertexs);
     drawQuadrangle(cxt, vertexs, vertex_color[3]);
 
     vertexs = [
         vertex_pos[polygon[3][0]], vertex_pos[polygon[3][1]],
         vertex_pos[polygon[3][2]], vertex_pos[polygon[3][3]]
     ];
-    // console.log(vertexs);
     drawQuadrangle(cxt, vertexs, vertex_color[2]);
 
     // 绘制9个点
