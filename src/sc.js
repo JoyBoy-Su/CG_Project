@@ -1,4 +1,5 @@
 var range = 10;
+const color_map = [0, 1, 3, 2];
 
 // 绘制一个点(x, y)的函数
 function drawPoint(cxt, x, y, color) {
@@ -148,13 +149,13 @@ function drawCanvas(cxt, vertex_pos, polygon, vertex_color) {
         vertex_pos[polygon[2][0]], vertex_pos[polygon[2][1]],
         vertex_pos[polygon[2][2]], vertex_pos[polygon[2][3]]
     ];
-    drawQuadrangle(cxt, vertexs, vertex_color[3]);
+    drawQuadrangle(cxt, vertexs, vertex_color[2]);
 
     vertexs = [
         vertex_pos[polygon[3][0]], vertex_pos[polygon[3][1]],
         vertex_pos[polygon[3][2]], vertex_pos[polygon[3][3]]
     ];
-    drawQuadrangle(cxt, vertexs, vertex_color[2]);
+    drawQuadrangle(cxt, vertexs, vertex_color[3]);
 
     // 绘制9个点
     for (pos in vertex_pos) {

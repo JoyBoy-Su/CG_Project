@@ -7,9 +7,12 @@
     <script>
         var move = false;       // 鼠标是否按住移动
         var move_index = -1;    // 移动的端点下标
-        var boundary = 0;       // 鼠标移动触发绘制的范围
         // TODO：维护一个可以直接由(x, y)计算得到move_index的数据结构
-
+        const order = [
+            [1, 2, 3, 0], [2, 3, 0, 1], [0, 2, 3, 1],
+            [1, 3, 0, 2], [0, 1, 2, 3], [0, 2, 1, 3], 
+            [0, 1, 3, 2], [0, 1, 2, 3], [0, 1, 2, 3]
+        ];
     </script>
 </head>
 <body>
@@ -41,10 +44,20 @@
                 vertex = vertex_pos[move_index];
                 vertex[0] = event.offsetX;
                 vertex[1] = event.offsetY;
+                let _polygon = [];
+                for (let i = 0; i < order[move_index].length; i++) {
+                    _polygon[i] = polygon[order[move_index][i]];
+                }
+                // console.log("_polygon: ", _polygon);
+                let _color = [];
+                for (let i = 0; i < order[move_index].length; i++) {
+                    _color[i] = vertex_color[color_map[order[move_index][i]]];
+                }
+                // console.log("_color: ", _color);
                 // clear
                 var cxt = document.getElementById("myCanvas").getContext("2d");
                 cxt.clearRect(-1, -1, canvas_obj.width, canvas_obj.height);
-                drawCanvas(cxt, vertex_pos, polygon, vertex_color);
+                drawCanvas(cxt, vertex_pos, _polygon, _color);
             }
         }
 
@@ -65,8 +78,9 @@
 		
 		//将canvas坐标整体偏移0.5，用于解决宽度为1个像素的线段的绘制问题，具体原理详见project文档
 		cxt.translate(0.5, 0.5);
-
-        drawCanvas(cxt, vertex_pos, polygon, vertex_color);
+        let _color = [vertex_color[color_map[0]], vertex_color[color_map[1]], 
+            vertex_color[color_map[2]], vertex_color[color_map[3]]];
+        drawCanvas(cxt, vertex_pos, polygon, _color);
 
     </script>
  
