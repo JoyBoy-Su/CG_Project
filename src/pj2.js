@@ -1,10 +1,11 @@
 // vertext shader
 var VSHADER_SOURCE = 
     'attribute vec4 a_Position;\n' +    // attribute variable
-    'attribute vec4 a_Color;\n' +    // attribute variable
-    'varying vec4 v_Color;\n' +    // varying variable
+    'attribute vec4 a_Color;\n' +       // attribute variable
+    'varying vec4 v_Color;\n' +         // varying variable
+    'uniform mat4 u_Matrix;\n' +       // attribute variable
     'void main() {\n' +
-    '  gl_Position = a_Position;\n' +
+    '  gl_Position = u_Matrix * a_Position;\n' +
     '  v_Color = a_Color;\n' +
     '}\n'; 
 
@@ -17,6 +18,8 @@ var FSHADER_SOURCE =
     '}\n';
 
 var count = 8 * 3;
+var angle = 20.0;
+var scale = 0.8;
 
 function main() {
     var canvas = document.getElementById("webgl");
@@ -28,9 +31,12 @@ function main() {
     var gl = getWebGLContext(canvas);
     initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
 
-    /* set vertex */
+    /* vertex */
     var vertices = new Float32Array(count * 5);
     initVertexBuffers(gl, vertices);
+    /* matrix */
+    var matrix = new Matrix4();
+    var u_Matrix = gl.getUniformLocation(gl.program, "u_Matrix");
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     
     /* mouse operation */
@@ -38,7 +44,7 @@ function main() {
     canvas.onmousemove = function(event) { canvasMouseMove(event, gl, count, vertex_pos, vertex_color, canvas, vertices); }
     canvas.onmouseup = function(event) { canvasMouseUp(); }
 
-    draw(gl, count, vertex_pos, vertex_color, canvas, vertices);
+    draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
 }
 
 function initVertexBuffers(gl, vertices) {
@@ -114,9 +120,15 @@ function setVertices(pos, color, canvas, vertices) {
 }
 
 /* draw canvas */
-function draw(gl, n, pos, color, canvas, vertices) {
+function draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix) {
+    /* set position and color (attribute variable) */
     setVertices(pos, color, canvas, vertices);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);   /* data */
+
+    /* set matrix (uniform variable) */
+    matrix.setRotate(angle, 0, 0, 1);
+    matrix.scale(scale, scale, 1.0);
+    gl.uniformMatrix4fv(u_Matrix, false, matrix.elements);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, n);
