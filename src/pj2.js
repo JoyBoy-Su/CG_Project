@@ -19,9 +19,9 @@ var FSHADER_SOURCE =
 
 var count = 8 * 3;
 var angle_step = 45.0;
-// var scale_step = 0.2;
-// var scale_lower_limit = 0.2;
-// var scale_upper_limit = 1.0;
+var scale_step = 0.2;
+var scale_lower_limit = 0.2;
+var scale_upper_limit = 1.0;
 
 function main() {
     var canvas = document.getElementById("webgl");
@@ -51,9 +51,9 @@ function main() {
 
     /* set tick */
     var tick = function() {
-        var params = animate(angle);
+        var params = animate(angle, scale);
         angle = params[0];
-        // scale = params[1];
+        scale = params[1];
         draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
         requestAnimationFrame(tick);
     };
@@ -185,6 +185,7 @@ function canvasMouseUp() {
 
 // rotate
 var last = Date.now();
+var scale_op = 0;   /* 0: decrease; 1: increase */
 function animate(angle, scale) {
     var now = Date.now();
     var elapsed = now - last;
@@ -192,12 +193,16 @@ function animate(angle, scale) {
     // angle
     angle = angle + (elapsed * angle_step) / 1000.0;
     // scale
-    // if (scale - 0.2 <= 0.01) {
-    //     // scale == 0.2
-    //     scale = scale + (elapsed * scale_step);
-    // } else {
-    //     // scale > 0.2
-    //     scale = scale - (elapsed * scale_step);
-    // }
+    if (scale_op == 0) {
+        // decrease
+        var _scale = scale - (elapsed * scale_step) / 1000.0;
+        scale = (_scale >= scale_lower_limit) ? _scale : scale_lower_limit;
+        if (scale == scale_lower_limit) scale_op = 1;
+    } else {
+        // increase
+        var _scale = scale + (elapsed * scale_step) / 1000.0;
+        scale = (_scale <= scale_upper_limit) ? _scale : scale_upper_limit;
+        if (scale == scale_upper_limit) scale_op = 0;
+    }
     return [angle % 360, scale];
 }
