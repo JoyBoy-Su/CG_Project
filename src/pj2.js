@@ -1,25 +1,33 @@
 // vertext shader
-var VSHADER_SOURCE = 
-    'attribute vec4 a_Position;\n' +    // attribute variable
-    'attribute vec4 a_Color;\n' +       // attribute variable
-    'varying vec4 v_Color;\n' +         // varying variable
-    'uniform mat4 u_Matrix;\n' +       // attribute variable
-    'void main() {\n' +
-    '  gl_Position = u_Matrix * a_Position;\n' +
-    '  v_Color = a_Color;\n' +
-    '}\n'; 
+var VSHADER_SOURCE = `
+    attribute vec4 a_Position;\n
+    attribute vec4 a_Color;\n
+    uniform mat4 u_Matrix;\n
+    varying vec4 v_Color;\n
+    void main() {\n
+        gl_Position = u_Matrix * a_Position;\n
+        v_Color = a_Color;\n
+    }\n
+`;
 
 // fragment shader
-var FSHADER_SOURCE = 
-    'precision mediump float;\n' + // Precision qualifier
-    'varying vec4 v_Color;\n' +    // varying variable
-    'void main() {\n' +
-    '  gl_FragColor = v_Color;\n' +
-    '}\n';
+var FSHADER_SOURCE = `
+    precision mediump float;\n
+    uniform float u_Line;\n
+    varying vec4 v_Color;\n
+    void main() {\n
+        if (u_Line > 1.0) {\n
+            gl_FragColor = v_Color;\n
+        } else {\n
+            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n
+        }\n
+    }\n
+`;
 
 var count = 8 * 3;
 
 var mode = 0;           /* 0: can edit; 1: can't */
+var border = 1;          /* 0: no border; 1: border */
 
 var angle_step = 45.0;
 var scale_step = 0.2;
@@ -44,6 +52,7 @@ function main() {
     /* matrix */
     var matrix = new Matrix4();
     var u_Matrix = gl.getUniformLocation(gl.program, "u_Matrix");
+    var u_Line = gl.getUniformLocation(gl.program, "u_Line");
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     /* model transformation params */
     var angle = 0.0;
@@ -54,12 +63,12 @@ function main() {
         var params = animate(angle, scale);
         angle = params[0];
         scale = params[1];
-        _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
+        _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix, u_Line);
         req_id = requestAnimationFrame(tick);
     };
 
     var reset = function() { angle = 1.0; scale = 1.0; }
-    var draw = function() { _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix); }
+    var draw = function() { _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix, u_Line); }
 
     /* mouse operation */
     canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos); }
@@ -145,7 +154,7 @@ function setVertices(pos, color, canvas, vertices) {
 }
 
 /* draw canvas */
-function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix) {
+function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix, u_Line) {
     /* set position and color (attribute variable) */
     setVertices(pos, color, canvas, vertices);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);   /* data */
@@ -154,9 +163,17 @@ function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matr
     matrix.setRotate(angle, 0, 0, 1);
     matrix.scale(scale, scale, 1.0);
     gl.uniformMatrix4fv(u_Matrix, false, matrix.elements);
-
+    /* set line (uniform variable) */
+    gl.uniform1f(u_Line, 2.0);
+    
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, n);
+    
+    if (border == 1) {
+        /* set line (uniform variable) */
+        gl.uniform1f(u_Line, 0.0);
+        for (var i = 0; i < n; i++) gl.drawArrays(gl.LINE_LOOP, i * 3, 3);
+    }
 }
 
 // rotate
@@ -228,7 +245,8 @@ function canvasKeyDown(event, tick, reset, draw) {
     var code = event.keyCode;                   /* B: 66; E: 69; T: 84 */
     switch (code) {
         case 66:                                /* B */
-            console.log("function to be realized...")
+            border ^= 1;
+            draw();
             break;
         case 69:                                /* E */
             mode = 0;                           /* set mode */
@@ -237,10 +255,10 @@ function canvasKeyDown(event, tick, reset, draw) {
                 req_id = -1;
             }
             reset();                            /* reset angle and scale */
-            draw();                            /* draw */
+            draw();                             /* draw */
             break;
         case 84:                                /* T */
-            mode = mode ^ 1;                    /* switch mode */
+            mode ^= 1;                          /* switch mode */
             if (mode == 1) {
                 /* start timing */
                 last = Date.now();
@@ -253,6 +271,7 @@ function canvasKeyDown(event, tick, reset, draw) {
             }
             break;
         default:
+            console.log("function to be realized...");
             break;
     }
 }
