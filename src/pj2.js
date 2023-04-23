@@ -17,14 +17,19 @@ var FSHADER_SOURCE =
     '  gl_FragColor = v_Color;\n' +
     '}\n';
 
+var count = 8 * 3;
 function main() {
     var canvas = document.getElementById("webgl");
+    /* set canvas width and height */
+    canvas.width = canvasSize.maxX;
+    canvas.height = canvasSize.maxY;
+
+    /* webgl */
     var gl = getWebGLContext(canvas);
     initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
 
     /* vertex */
-    var n = vertex_pos.length;
-    var vertices = new Float32Array(n * 5);
+    var vertices = new Float32Array(count * 5);
     setVertices(vertex_pos, vertex_color, canvas, vertices);
     console.log("vertices: ", vertices);
 
@@ -33,7 +38,7 @@ function main() {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    gl.drawArrays(gl.POINTS, 0, n);
+    gl.drawArrays(gl.TRIANGLES, 0, count);
 }
 
 function initVertexBuffers(gl, vertices) {
@@ -53,13 +58,55 @@ function initVertexBuffers(gl, vertices) {
     gl.enableVertexAttribArray(a_Color);
 }
 
+/**
+ * mapping: vertices.index -> pos.index 
+ * vertices[index] = pos[mapping[index]]
+ * triangle mapping:
+ * 1-th triangle
+ * vertices[0]  = pos[4]
+ * vertices[1]  = pos[1]
+ * vertices[2]  = pos[0]
+ * 2-th triangle
+ * vertices[3]  = pos[4]
+ * vertices[4]  = pos[0]
+ * vertices[5]  = pos[3]
+ * 3-th triangle
+ * vertices[6]  = pos[4]
+ * vertices[7]  = pos[3]
+ * vertices[8]  = pos[7]
+ * 4-th triangle
+ * vertices[9]  = pos[4]
+ * vertices[10] = pos[7]
+ * vertices[11] = pos[8]
+ * 5-th triangle
+ * vertices[12] = pos[4]
+ * vertices[13] = pos[8]
+ * vertices[14] = pos[5]
+ * 6-th triangle
+ * vertices[15] = pos[4]
+ * vertices[16] = pos[5]
+ * vertices[17] = pos[1]
+ * 7-th triangle
+ * vertices[18] = pos[3]
+ * vertices[19] = pos[6]
+ * vertices[20] = pos[7]
+ * 8-th triangle
+ * vertices[21] = pos[1]
+ * vertices[22] = pos[2]
+ * vertices[23] = pos[5]
+ */
+var mapping = [
+    4, 1, 0, 4, 0, 3,
+    4, 3, 7, 4, 7, 8,
+    4, 8, 5, 4, 5, 1,
+    3, 6, 7, 1, 2, 5,
+];
 function setVertices(pos, color, canvas, vertices) {
-    var n = pos.length;
     var rect = canvas.getBoundingClientRect();
     /* pos normalization */
     for (var index in pos) {
-        pos[index][0] = ((pos[index][0] - rect.left) - canvas.width / 2) / (canvas.width / 2);
-        pos[index][1] = (canvas.height / 2 - (pos[index][1] - rect.top)) / (canvas.height / 2)
+        pos[index][0] = ((pos[index][0]/* - rect.left*/) - canvas.width / 2) / (canvas.width / 2);
+        pos[index][1] = (canvas.height / 2 - (pos[index][1]/* - rect.top*/)) / (canvas.height / 2)
     }
     /* color normalization */
     for (var index in color) {
@@ -68,11 +115,11 @@ function setVertices(pos, color, canvas, vertices) {
         }
     }
     /* set vertices */
-    for (var index = 0; index < n; index++) {
-        vertices[index * 5 + 0] = pos[index][0];
-        vertices[index * 5 + 1] = pos[index][1];        
-        vertices[index * 5 + 2] = color[index][0];
-        vertices[index * 5 + 3] = color[index][1];
-        vertices[index * 5 + 4] = color[index][2];
+    for (var index = 0; index < count; index++) {
+        vertices[index * 5 + 0] = pos[mapping[index]][0];
+        vertices[index * 5 + 1] = pos[mapping[index]][1];        
+        vertices[index * 5 + 2] = color[mapping[index]][0];
+        vertices[index * 5 + 3] = color[mapping[index]][1];
+        vertices[index * 5 + 4] = color[mapping[index]][2];
     }
 }
