@@ -22,24 +22,21 @@ function main() {
     var gl = getWebGLContext(canvas);
     initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
 
-    var n = initVertexBuffers(gl);
+    /* vertex */
+    var n = vertex_pos.length;
+    var vertices = new Float32Array(n * 5);
+    setVertices(vertex_pos, vertex_color, canvas, vertices);
+    console.log("vertices: ", vertices);
+
+    initVertexBuffers(gl, vertices);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.drawArrays(gl.POINTS, 0, n);
-    // gl.drawArrays(gl.TRIANGLES, 0, n);
 }
 
-function initVertexBuffers(gl) {
-    var vertices = new Float32Array([
-        // Vertex coordinates and color
-        0.0,  0.5,  1.0,  0.0,  0.0, 
-        -0.5, -0.5,  0.0,  1.0,  0.0, 
-        0.5, -0.5,  0.0,  0.0,  1.0, 
-    ]);
-    var n = 3;
-
+function initVertexBuffers(gl, vertices) {
     var buffer = gl.createBuffer();             /* create */
 
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);     /* bind */
@@ -54,6 +51,28 @@ function initVertexBuffers(gl) {
     var a_Color = gl.getAttribLocation(gl.program, "a_Color");
     gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, 5 * size, 2 * size);
     gl.enableVertexAttribArray(a_Color);
+}
 
-    return n;
+function setVertices(pos, color, canvas, vertices) {
+    var n = pos.length;
+    var rect = canvas.getBoundingClientRect();
+    /* pos normalization */
+    for (var index in pos) {
+        pos[index][0] = ((pos[index][0] - rect.left) - canvas.width / 2) / (canvas.width / 2);
+        pos[index][1] = (canvas.height / 2 - (pos[index][1] - rect.top)) / (canvas.height / 2)
+    }
+    /* color normalization */
+    for (var index in color) {
+        for (var rgb = 0; rgb < 3; rgb++) {
+            color[index][rgb] /= 255;
+        }
+    }
+    /* set vertices */
+    for (var index = 0; index < n; index++) {
+        vertices[index * 5 + 0] = pos[index][0];
+        vertices[index * 5 + 1] = pos[index][1];        
+        vertices[index * 5 + 2] = color[index][0];
+        vertices[index * 5 + 3] = color[index][1];
+        vertices[index * 5 + 4] = color[index][2];
+    }
 }
