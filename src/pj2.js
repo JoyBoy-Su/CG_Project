@@ -24,7 +24,7 @@ var FSHADER_SOURCE = `
     }\n
 `;
 
-var count = 8 * 3;
+var count = 4 * 4;
 
 var mode = 0;           /* 0: can edit; 1: can't */
 var border = 1;          /* 0: no border; 1: border */
@@ -48,10 +48,10 @@ function main() {
     canvas.height = canvasSize.maxY;
     /*  */
     mapping = [
-        polygon[0][0], polygon[0][2], polygon[0][1], polygon[0][0], polygon[0][2], polygon[0][3],
-        polygon[1][0], polygon[1][2], polygon[1][1], polygon[1][0], polygon[1][2], polygon[1][3],
-        polygon[2][0], polygon[2][2], polygon[2][1], polygon[2][0], polygon[2][2], polygon[2][3],
-        polygon[3][0], polygon[3][2], polygon[3][1], polygon[3][0], polygon[3][2], polygon[3][3],
+        polygon[0][3], polygon[0][0], polygon[0][2], polygon[0][1],
+        polygon[1][3], polygon[1][0], polygon[1][2], polygon[1][1],
+        polygon[2][3], polygon[2][0], polygon[2][2], polygon[2][1],
+        polygon[3][3], polygon[3][0], polygon[3][2], polygon[3][1],
     ];
 
     /* webgl */
@@ -77,12 +77,12 @@ function main() {
         var params = animate(angle, scale);
         angle = params[0];
         scale = params[1];
-        _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, i_matrix, u_Matrix, u_Line);
+        _draw(gl, count / 4, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, i_matrix, u_Matrix, u_Line);
         req_id = requestAnimationFrame(tick);
     };
 
     var reset = function() { angle = 1.0; scale = 1.0; }
-    var draw = function() { _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, i_matrix, u_Matrix, u_Line); }
+    var draw = function() { _draw(gl, count / 4, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, i_matrix, u_Matrix, u_Line); }
 
     /* mouse operation */
     canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos, i_matrix.elements, canvas); }
@@ -139,12 +139,17 @@ function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, i_matr
     gl.uniform1f(u_Line, 2.0);
     
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, n);
+    /* draw triangle */
+    for (var i = 0; i < n; i++) gl.drawArrays(gl.TRIANGLE_STRIP, i * 4, 4);
     
     if (border == 1) {
         /* set line (uniform variable) */
         gl.uniform1f(u_Line, 0.0);
-        for (var i = 0; i < n; i++) gl.drawArrays(gl.LINE_LOOP, i * 3, 3);
+        /* draw lines */
+        for (var i = 0; i < n; i++) {
+            gl.drawArrays(gl.LINE_LOOP, i * 4, 3);
+            gl.drawArrays(gl.LINE_LOOP, i * 4 + 1, 3);
+        }
     }
 }
 
