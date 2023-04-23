@@ -35,11 +35,24 @@ var scale_lower_limit = 0.2;
 var scale_upper_limit = 1.0;
 var req_id = -1;
 
+/**
+ * mapping: vertices.index -> pos.index 
+ * vertices[index] = pos[mapping[index]]
+ */
+var mapping = [];
+
 function main() {
     var canvas = document.getElementById("webgl");
     /* set canvas width and height */
     canvas.width = canvasSize.maxX;
     canvas.height = canvasSize.maxY;
+    /*  */
+    mapping = [
+        polygon[0][0], polygon[0][2], polygon[0][1], polygon[0][0], polygon[0][2], polygon[0][3],
+        polygon[1][0], polygon[1][2], polygon[1][1], polygon[1][0], polygon[1][2], polygon[1][3],
+        polygon[2][0], polygon[2][2], polygon[2][1], polygon[2][0], polygon[2][2], polygon[2][3],
+        polygon[3][0], polygon[3][2], polygon[3][1], polygon[3][0], polygon[3][2], polygon[3][3],
+    ];
 
     /* webgl */
     var gl = getWebGLContext(canvas);
@@ -51,6 +64,7 @@ function main() {
 
     /* matrix */
     var matrix = new Matrix4();
+    var i_matrix = new Matrix4();
     var u_Matrix = gl.getUniformLocation(gl.program, "u_Matrix");
     var u_Line = gl.getUniformLocation(gl.program, "u_Line");
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -63,16 +77,16 @@ function main() {
         var params = animate(angle, scale);
         angle = params[0];
         scale = params[1];
-        _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix, u_Line);
+        _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, i_matrix, u_Matrix, u_Line);
         req_id = requestAnimationFrame(tick);
     };
 
     var reset = function() { angle = 1.0; scale = 1.0; }
-    var draw = function() { _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix, u_Line); }
+    var draw = function() { _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, i_matrix, u_Matrix, u_Line); }
 
     /* mouse operation */
-    canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos); }
-    canvas.onmousemove = function(event) { canvasMouseMove(event, draw); }
+    canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos, i_matrix.elements, canvas); }
+    canvas.onmousemove = function(event) { canvasMouseMove(event, draw, i_matrix.elements, canvas); }
     canvas.onmouseup = function(event) { canvasMouseUp(); }
 
     /* keybord operation */
@@ -98,49 +112,6 @@ function initVertexBuffers(gl, vertices) {
     gl.enableVertexAttribArray(a_Color);
 }
 
-/**
- * mapping: vertices.index -> pos.index 
- * vertices[index] = pos[mapping[index]]
- * triangle mapping:
- * 1-th triangle
- * vertices[0]  = pos[4]
- * vertices[1]  = pos[1]
- * vertices[2]  = pos[0]
- * 2-th triangle
- * vertices[3]  = pos[4]
- * vertices[4]  = pos[0]
- * vertices[5]  = pos[3]
- * 3-th triangle
- * vertices[6]  = pos[4]
- * vertices[7]  = pos[3]
- * vertices[8]  = pos[7]
- * 4-th triangle
- * vertices[9]  = pos[4]
- * vertices[10] = pos[7]
- * vertices[11] = pos[8]
- * 5-th triangle
- * vertices[12] = pos[4]
- * vertices[13] = pos[8]
- * vertices[14] = pos[5]
- * 6-th triangle
- * vertices[15] = pos[4]
- * vertices[16] = pos[5]
- * vertices[17] = pos[1]
- * 7-th triangle
- * vertices[18] = pos[3]
- * vertices[19] = pos[6]
- * vertices[20] = pos[7]
- * 8-th triangle
- * vertices[21] = pos[1]
- * vertices[22] = pos[2]
- * vertices[23] = pos[5]
- */
-var mapping = [
-    4, 1, 0, 4, 0, 3,
-    4, 3, 7, 4, 7, 8,
-    4, 8, 5, 4, 5, 1,
-    3, 6, 7, 1, 2, 5,
-];
 function setVertices(pos, color, canvas, vertices) {
     // var rect = canvas.getBoundingClientRect();
     /* set vertices */
@@ -154,7 +125,7 @@ function setVertices(pos, color, canvas, vertices) {
 }
 
 /* draw canvas */
-function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix, u_Line) {
+function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, i_matrix, u_Matrix, u_Line) {
     /* set position and color (attribute variable) */
     setVertices(pos, color, canvas, vertices);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);   /* data */
@@ -162,6 +133,7 @@ function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matr
     /* set matrix (uniform variable) */
     matrix.setRotate(angle, 0, 0, 1);
     matrix.scale(scale, scale, 1.0);
+    i_matrix.setInverseOf(matrix);
     gl.uniformMatrix4fv(u_Matrix, false, matrix.elements);
     /* set line (uniform variable) */
     gl.uniform1f(u_Line, 2.0);
@@ -204,14 +176,29 @@ var move_index = -1;
 var move = false;
 var range = 10;
 // mouse down
-function canvasMouseDown(event, pos) {
+function canvasMouseDown(event, pos, matrix, canvas) {
     /* edit */
     if (mode != 0) return;
+    /**
+     * inverse transformation: offsetX, offsetY -> x', y'(pos)
+     * 1: canvas -> webgl
+     * 2: inverse transformation
+     * 3: webgl -> canvas
+     */
+    /* webgl coord */
+    var w_x = ((event.offsetX/* - rect.left*/) - canvas.width / 2) / (canvas.width / 2);
+    var w_y = (canvas.height / 2 - (event.offsetY/* - rect.top*/)) / (canvas.height / 2);
+    /* webgl coord after inverse transformation */
+    var x = matrix[0] * w_x + matrix[4] * w_y;
+    var y = matrix[1] * w_x + matrix[5] * w_y;
+    /* canvas coord */
+    x = (x + 1) * (canvas.width / 2);
+    y = (1 - y) * (canvas.height / 2);
     // check index
     for (var i = 0; i < pos.length; i++) {
         vertex = pos[i];
-        if ((event.offsetX >= vertex[0] - range) && (event.offsetX <= vertex[0] + range)
-        && (event.offsetY >= vertex[1] - range) && (event.offsetY <= vertex[1] + range)) {
+        if ((x >= vertex[0] - range) && (x <= vertex[0] + range)
+        && (y >= vertex[1] - range) && (y <= vertex[1] + range)) {
             move_index = i;
             move = true;
             break;
@@ -220,13 +207,23 @@ function canvasMouseDown(event, pos) {
 }
 
 // mouse move
-function canvasMouseMove(event, draw) {
+function canvasMouseMove(event, draw, matrix, canvas) {
     if (mode != 0) return;
+    /* inverse transformation */
+    /* webgl coord */
+    var w_x = ((event.offsetX/* - rect.left*/) - canvas.width / 2) / (canvas.width / 2);
+    var w_y = (canvas.height / 2 - (event.offsetY/* - rect.top*/)) / (canvas.height / 2);
+    /* webgl coord after inverse transformation */
+    var x = matrix[0] * w_x + matrix[4] * w_y;
+    var y = matrix[1] * w_x + matrix[5] * w_y;
+    /* canvas coord */
+    x = (x + 1) * (canvas.width / 2);
+    y = (1 - y) * (canvas.height / 2);
     // move and draw
     if (move === true && move_index >= 0) {
         vertex = vertex_pos[move_index];
-        vertex[0] = event.offsetX;
-        vertex[1] = event.offsetY;
+        vertex[0] = x;
+        vertex[1] = y;
         // clear
         draw();
     }
