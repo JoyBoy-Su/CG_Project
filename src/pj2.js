@@ -18,10 +18,14 @@ var FSHADER_SOURCE =
     '}\n';
 
 var count = 8 * 3;
+
+var mode = 0;           /* 0: can edit; 1: can't */
+
 var angle_step = 45.0;
 var scale_step = 0.2;
 var scale_lower_limit = 0.2;
 var scale_upper_limit = 1.0;
+var req_id = -1;
 
 function main() {
     var canvas = document.getElementById("webgl");
@@ -36,6 +40,7 @@ function main() {
     /* vertex */
     var vertices = new Float32Array(count * 5);
     initVertexBuffers(gl, vertices);
+
     /* matrix */
     var matrix = new Matrix4();
     var u_Matrix = gl.getUniformLocation(gl.program, "u_Matrix");
@@ -44,20 +49,27 @@ function main() {
     var angle = 0.0;
     var scale = 1.0;
     
-    /* mouse operation */
-    canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos); }
-    canvas.onmousemove = function(event) { canvasMouseMove(event, gl, count, vertex_pos, vertex_color, canvas, vertices); }
-    canvas.onmouseup = function(event) { canvasMouseUp(); }
-
     /* set tick */
     var tick = function() {
         var params = animate(angle, scale);
         angle = params[0];
         scale = params[1];
         draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
-        requestAnimationFrame(tick);
+        req_id = requestAnimationFrame(tick);
     };
-    tick();
+
+    var reset = function() { angle = 1.0; scale = 1.0; }
+    var _draw = function() { draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix); }
+
+    /* mouse operation */
+    canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos); }
+    canvas.onmousemove = function(event) { canvasMouseMove(event, gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix); }
+    canvas.onmouseup = function(event) { canvasMouseUp(); }
+
+    /* keybord operation */
+    document.onkeydown = function(event) { canvasKeyDown(event, tick, reset, _draw); }
+    // tick();
+    draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix)
 }
 
 function initVertexBuffers(gl, vertices) {
@@ -147,42 +159,6 @@ function draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matri
     gl.drawArrays(gl.TRIANGLES, 0, n);
 }
 
-var move_index = -1;
-var move = false;
-var range = 10;
-// mouse down
-function canvasMouseDown(event, pos) {
-    // check index
-    for (var i = 0; i < pos.length; i++) {
-        vertex = pos[i];
-        if ((event.offsetX >= vertex[0] - range) && (event.offsetX <= vertex[0] + range)
-        && (event.offsetY >= vertex[1] - range) && (event.offsetY <= vertex[1] + range)) {
-            move_index = i;
-            move = true;
-            break;
-        }
-    }
-}
-
-// mouse move
-function canvasMouseMove(event, gl, n, pos, color, canvas, vertices) {
-    // move and draw
-    if (move === true && move_index >= 0) {
-        vertex = vertex_pos[move_index];
-        vertex[0] = event.offsetX;
-        vertex[1] = event.offsetY;
-        // clear
-        draw(gl, n, pos, color, canvas, vertices);
-    }
-}
-
-// mouse up
-function canvasMouseUp() {
-    // cancle
-    move = false;
-    move_index = -1;
-}
-
 // rotate
 var last = Date.now();
 var scale_op = 0;   /* 0: decrease; 1: increase */
@@ -205,4 +181,78 @@ function animate(angle, scale) {
         if (scale == scale_upper_limit) scale_op = 0;
     }
     return [angle % 360, scale];
+}
+
+var move_index = -1;
+var move = false;
+var range = 10;
+// mouse down
+function canvasMouseDown(event, pos) {
+    /* edit */
+    if (mode != 0) return;
+    // check index
+    for (var i = 0; i < pos.length; i++) {
+        vertex = pos[i];
+        if ((event.offsetX >= vertex[0] - range) && (event.offsetX <= vertex[0] + range)
+        && (event.offsetY >= vertex[1] - range) && (event.offsetY <= vertex[1] + range)) {
+            move_index = i;
+            move = true;
+            break;
+        }
+    }
+}
+
+// mouse move
+function canvasMouseMove(event, gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix) {
+    if (mode != 0) return;
+    // move and draw
+    if (move === true && move_index >= 0) {
+        vertex = vertex_pos[move_index];
+        vertex[0] = event.offsetX;
+        vertex[1] = event.offsetY;
+        // clear
+        draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix)
+    }
+}
+
+// mouse up
+function canvasMouseUp() {
+    if (mode != 0) return;
+    // cancel
+    move = false;
+    move_index = -1;
+}
+
+// keyboard down
+function canvasKeyDown(event, tick, reset, _draw) {
+    var code = event.keyCode;                   /* B: 66; E: 69; T: 84 */
+    switch (code) {
+        case 66:                                /* B */
+            console.log("function to be realized...")
+            break;
+        case 69:                                /* E */
+            mode = 0;                           /* set mode */
+            if (req_id != -1) {                 /* cancel req */
+                cancelAnimationFrame(req_id);
+                req_id = -1;
+            }
+            reset();                            /* reset angle and scale */
+            _draw();                            /* draw */
+            break;
+        case 84:                                /* T */
+            mode = mode ^ 1;                    /* switch mode */
+            if (mode == 1) {
+                /* start timing */
+                last = Date.now();
+                // start transformation
+                tick();
+            } else {
+                /* cancel tick */
+                cancelAnimationFrame(req_id);
+                req_id = -1;
+            }
+            break;
+        default:
+            break;
+    }
 }
