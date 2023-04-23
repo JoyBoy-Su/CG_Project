@@ -18,8 +18,10 @@ var FSHADER_SOURCE =
     '}\n';
 
 var count = 8 * 3;
-var angle = 20.0;
-var scale = 0.8;
+var angle_step = 45.0;
+// var scale_step = 0.2;
+// var scale_lower_limit = 0.2;
+// var scale_upper_limit = 1.0;
 
 function main() {
     var canvas = document.getElementById("webgl");
@@ -38,13 +40,24 @@ function main() {
     var matrix = new Matrix4();
     var u_Matrix = gl.getUniformLocation(gl.program, "u_Matrix");
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    /* model transformation params */
+    var angle = 0.0;
+    var scale = 1.0;
     
     /* mouse operation */
     canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos); }
     canvas.onmousemove = function(event) { canvasMouseMove(event, gl, count, vertex_pos, vertex_color, canvas, vertices); }
     canvas.onmouseup = function(event) { canvasMouseUp(); }
 
-    draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
+    /* set tick */
+    var tick = function() {
+        var params = animate(angle);
+        angle = params[0];
+        // scale = params[1];
+        draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
+        requestAnimationFrame(tick);
+    };
+    tick();
 }
 
 function initVertexBuffers(gl, vertices) {
@@ -168,4 +181,23 @@ function canvasMouseUp() {
     // cancle
     move = false;
     move_index = -1;
+}
+
+// rotate
+var last = Date.now();
+function animate(angle, scale) {
+    var now = Date.now();
+    var elapsed = now - last;
+    last = now;
+    // angle
+    angle = angle + (elapsed * angle_step) / 1000.0;
+    // scale
+    // if (scale - 0.2 <= 0.01) {
+    //     // scale == 0.2
+    //     scale = scale + (elapsed * scale_step);
+    // } else {
+    //     // scale > 0.2
+    //     scale = scale - (elapsed * scale_step);
+    // }
+    return [angle % 360, scale];
 }
