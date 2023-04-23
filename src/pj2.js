@@ -5,7 +5,6 @@ var VSHADER_SOURCE =
     'varying vec4 v_Color;\n' +    // varying variable
     'void main() {\n' +
     '  gl_Position = a_Position;\n' +
-    '  gl_PointSize = 10.0;\n' +
     '  v_Color = a_Color;\n' +
     '}\n'; 
 
@@ -18,6 +17,7 @@ var FSHADER_SOURCE =
     '}\n';
 
 var count = 8 * 3;
+
 function main() {
     var canvas = document.getElementById("webgl");
     /* set canvas width and height */
@@ -28,17 +28,17 @@ function main() {
     var gl = getWebGLContext(canvas);
     initShaders(gl, VSHADER_SOURCE, FSHADER_SOURCE);
 
-    /* vertex */
+    /* set vertex */
     var vertices = new Float32Array(count * 5);
-    setVertices(vertex_pos, vertex_color, canvas, vertices);
-    console.log("vertices: ", vertices);
-
     initVertexBuffers(gl, vertices);
-
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    
+    /* mouse operation */
+    canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos); }
+    canvas.onmousemove = function(event) { canvasMouseMove(event, gl, count, vertex_pos, vertex_color, canvas, vertices); }
+    canvas.onmouseup = function(event) { canvasMouseUp(); }
 
-    gl.drawArrays(gl.TRIANGLES, 0, count);
+    draw(gl, count, vertex_pos, vertex_color, canvas, vertices);
 }
 
 function initVertexBuffers(gl, vertices) {
@@ -102,24 +102,58 @@ var mapping = [
     3, 6, 7, 1, 2, 5,
 ];
 function setVertices(pos, color, canvas, vertices) {
-    var rect = canvas.getBoundingClientRect();
-    /* pos normalization */
-    for (var index in pos) {
-        pos[index][0] = ((pos[index][0]/* - rect.left*/) - canvas.width / 2) / (canvas.width / 2);
-        pos[index][1] = (canvas.height / 2 - (pos[index][1]/* - rect.top*/)) / (canvas.height / 2)
-    }
-    /* color normalization */
-    for (var index in color) {
-        for (var rgb = 0; rgb < 3; rgb++) {
-            color[index][rgb] /= 255;
-        }
-    }
+    // var rect = canvas.getBoundingClientRect();
     /* set vertices */
     for (var index = 0; index < count; index++) {
-        vertices[index * 5 + 0] = pos[mapping[index]][0];
-        vertices[index * 5 + 1] = pos[mapping[index]][1];        
-        vertices[index * 5 + 2] = color[mapping[index]][0];
-        vertices[index * 5 + 3] = color[mapping[index]][1];
-        vertices[index * 5 + 4] = color[mapping[index]][2];
+        vertices[index * 5 + 0] = ((pos[mapping[index]][0]/* - rect.left*/) - canvas.width / 2) / (canvas.width / 2);
+        vertices[index * 5 + 1] = (canvas.height / 2 - (pos[mapping[index]][1]/* - rect.top*/)) / (canvas.height / 2);
+        vertices[index * 5 + 2] = color[mapping[index]][0] / 255;
+        vertices[index * 5 + 3] = color[mapping[index]][1] / 255;
+        vertices[index * 5 + 4] = color[mapping[index]][2] / 255;
     }
+}
+
+/* draw canvas */
+function draw(gl, n, pos, color, canvas, vertices) {
+    setVertices(pos, color, canvas, vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);   /* data */
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.drawArrays(gl.TRIANGLES, 0, n);
+}
+
+var move_index = -1;
+var move = false;
+var range = 10;
+// mouse down
+function canvasMouseDown(event, pos) {
+    // check index
+    for (var i = 0; i < pos.length; i++) {
+        vertex = pos[i];
+        if ((event.offsetX >= vertex[0] - range) && (event.offsetX <= vertex[0] + range)
+        && (event.offsetY >= vertex[1] - range) && (event.offsetY <= vertex[1] + range)) {
+            move_index = i;
+            move = true;
+            break;
+        }
+    }
+}
+
+// mouse move
+function canvasMouseMove(event, gl, n, pos, color, canvas, vertices) {
+    // move and draw
+    if (move === true && move_index >= 0) {
+        vertex = vertex_pos[move_index];
+        vertex[0] = event.offsetX;
+        vertex[1] = event.offsetY;
+        // clear
+        draw(gl, n, pos, color, canvas, vertices);
+    }
+}
+
+// mouse up
+function canvasMouseUp() {
+    // cancle
+    move = false;
+    move_index = -1;
 }
