@@ -54,22 +54,22 @@ function main() {
         var params = animate(angle, scale);
         angle = params[0];
         scale = params[1];
-        draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
+        _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix);
         req_id = requestAnimationFrame(tick);
     };
 
     var reset = function() { angle = 1.0; scale = 1.0; }
-    var _draw = function() { draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix); }
+    var draw = function() { _draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix); }
 
     /* mouse operation */
     canvas.onmousedown = function(event) { canvasMouseDown(event, vertex_pos); }
-    canvas.onmousemove = function(event) { canvasMouseMove(event, gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix); }
+    canvas.onmousemove = function(event) { canvasMouseMove(event, draw); }
     canvas.onmouseup = function(event) { canvasMouseUp(); }
 
     /* keybord operation */
-    document.onkeydown = function(event) { canvasKeyDown(event, tick, reset, _draw); }
+    document.onkeydown = function(event) { canvasKeyDown(event, tick, reset, draw); }
     // tick();
-    draw(gl, count, vertex_pos, vertex_color, canvas, vertices, angle, scale, matrix, u_Matrix)
+    draw();
 }
 
 function initVertexBuffers(gl, vertices) {
@@ -145,7 +145,7 @@ function setVertices(pos, color, canvas, vertices) {
 }
 
 /* draw canvas */
-function draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix) {
+function _draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix) {
     /* set position and color (attribute variable) */
     setVertices(pos, color, canvas, vertices);
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);   /* data */
@@ -203,7 +203,7 @@ function canvasMouseDown(event, pos) {
 }
 
 // mouse move
-function canvasMouseMove(event, gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix) {
+function canvasMouseMove(event, draw) {
     if (mode != 0) return;
     // move and draw
     if (move === true && move_index >= 0) {
@@ -211,7 +211,7 @@ function canvasMouseMove(event, gl, n, pos, color, canvas, vertices, angle, scal
         vertex[0] = event.offsetX;
         vertex[1] = event.offsetY;
         // clear
-        draw(gl, n, pos, color, canvas, vertices, angle, scale, matrix, u_Matrix)
+        draw();
     }
 }
 
@@ -224,7 +224,7 @@ function canvasMouseUp() {
 }
 
 // keyboard down
-function canvasKeyDown(event, tick, reset, _draw) {
+function canvasKeyDown(event, tick, reset, draw) {
     var code = event.keyCode;                   /* B: 66; E: 69; T: 84 */
     switch (code) {
         case 66:                                /* B */
@@ -237,7 +237,7 @@ function canvasKeyDown(event, tick, reset, _draw) {
                 req_id = -1;
             }
             reset();                            /* reset angle and scale */
-            _draw();                            /* draw */
+            draw();                            /* draw */
             break;
         case 84:                                /* T */
             mode = mode ^ 1;                    /* switch mode */
