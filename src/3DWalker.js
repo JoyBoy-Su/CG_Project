@@ -110,9 +110,9 @@ class SceneLoader {
         for (let o of ObjectList) {
             let loader = new ObjectLoader(o, { 'gl': this.gl }).init();
             // Add animation to bird
-            if (o.objFilePath.indexOf('bird') > 0) {
-                continue;
-            }
+            // if (o.objFilePath.indexOf('bird') > 0) {
+            //     continue;
+            // }
             this.loaders.push(loader);
         }
 
@@ -120,4 +120,5 @@ class SceneLoader {
         let cubeLoader = new CubeLoader(cubeRes, { 'gl': this.gl }).init();
         this.loaders.push(cubeLoader);
     }
+    
 }
