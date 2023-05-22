@@ -43,7 +43,6 @@ class ObjectLoader {
         uniform mat4 u_ModelMatrix;
         uniform mat4 u_NormalMatrix;
         uniform vec3 u_Color;
-        uniform vec4 u_Eye;
         uniform vec3 u_LightDirection;
         uniform vec3 u_AmbientLight;
         uniform vec3 u_LightPosition;
@@ -100,7 +99,6 @@ class ObjectLoader {
         this.u_NormalMatrix = this.gl.getUniformLocation(this.program, 'u_NormalMatrix');
         this.u_ModelMatrix = this.gl.getUniformLocation(this.program, 'u_ModelMatrix');
 
-        this.u_Eye = this.gl.getUniformLocation(this.program, 'u_Eye');
         this.u_FogColor = this.gl.getUniformLocation(this.program, 'u_FogColor');
         this.u_FogDist = this.gl.getUniformLocation(this.program, 'u_FogDist');
 
@@ -190,9 +188,6 @@ class ObjectLoader {
 
         this.gl.uniformMatrix4fv(this.u_MvpMatrix, false, g_mvpMatrix.elements);
         // fog
-        // set eye
-        var eyes = Camera.eye.elements;
-        this.gl.uniform4f(this.u_Eye, eyes[0], eyes[1], eyes[2], 1.0);
         // set fog color and dist
         this.gl.uniform3fv(this.u_FogColor, new Vector3(fogColor).elements);
         this.gl.uniform2f(this.u_FogDist, fogDist[0], fogDist[1]);

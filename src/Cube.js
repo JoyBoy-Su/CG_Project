@@ -24,11 +24,8 @@ class CubeLoader {
             attribute vec4 a_Position;
             attribute vec4 a_Color;
             uniform mat4 u_MvpMatrix;
-            uniform mat4 u_ModelMatrix;
-            uniform vec4 u_Eye;
             varying vec4 v_Color;
             varying float v_Dist;
-
             void main() {
                 gl_Position = u_MvpMatrix * a_Position;
                 v_Dist = gl_Position.w;
@@ -68,10 +65,6 @@ class CubeLoader {
         if (!this.u_MvpMatrix) {
             console.log('Failed to get the storage location of u_MvpMatrix');
         }
-        // model matrix location
-        this.u_ModelMatrix = this.gl.getUniformLocation(this.gl.program, 'u_ModelMatrix');
-        // eye location
-        this.u_Eye = this.gl.getUniformLocation(this.gl.program, 'u_Eye');
         // fog color and fog dist location
         this.u_FogColor = this.gl.getUniformLocation(this.gl.program, 'u_FogColor');
         this.u_FogDist = this.gl.getUniformLocation(this.gl.program, 'u_FogDist');
@@ -80,7 +73,7 @@ class CubeLoader {
         this.a_Position = this.gl.getAttribLocation(this.gl.program, 'a_Position');
         // Assign the buffer object to a_TexCoord variable and enable the assignment of the buffer object
         this.a_Color = this.gl.getAttribLocation(this.gl.program, 'a_Color');
-        
+
         this.g_normalMatrix = new Matrix4();
         this.g_modelMatrix = new Matrix4();
         this.g_modelMatrix.translate(this.entity.translate[0], this.entity.translate[1], this.entity.translate[2]);
@@ -113,17 +106,12 @@ class CubeLoader {
         this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
         this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.entity.index), this.gl.STATIC_DRAW);
 
-        // set model matrix
-        this.gl.uniformMatrix4fv(this.u_ModelMatrix, false, this.g_modelMatrix.elements);
         // set mvp matrix
         // Set the eye point and the viewing volume
         this.mvpMatrix = Camera.getMatrix();
         this.mvpMatrix.concat(this.g_modelMatrix);
         // Pass the model view projection matrix to u_MvpMatrix
         this.gl.uniformMatrix4fv(this.u_MvpMatrix, false, this.mvpMatrix.elements);
-        // set eye
-        var eyes = Camera.eye.elements;
-        this.gl.uniform4f(this.u_Eye, eyes[0], eyes[1], eyes[2], 1.0);
         // set fog color and dist
         this.gl.uniform3fv(this.u_FogColor, new Vector3(fogColor).elements);
         this.gl.uniform2f(this.u_FogDist, fogDist[0], fogDist[1]);

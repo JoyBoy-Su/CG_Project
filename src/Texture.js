@@ -28,9 +28,7 @@ class TextureLoader {
         let VSHADER_SOURCE = `
             attribute vec4 a_Position;
             attribute vec2 a_TexCoord;
-            uniform mat4 u_ModelMatrix;
             uniform mat4 u_MvpMatrix;
-            uniform vec4 u_Eye;
             varying vec2 v_TexCoord;
             varying float v_Dist;
             void main() {
@@ -70,7 +68,6 @@ class TextureLoader {
     initPerspective() {
         this.gl.enable(this.gl.DEPTH_TEST);
         // Get the storage location of u_MvpMatrix
-        this.u_ModelMatrix = this.gl.getUniformLocation(this.program, 'u_ModelMatrix');
         this.u_MvpMatrix = this.gl.getUniformLocation(this.gl.program, 'u_MvpMatrix');
         if (!this.u_MvpMatrix) {
             console.log('Failed to get the storage location of u_MvpMatrix');
@@ -82,7 +79,6 @@ class TextureLoader {
         this.a_TexCoord = this.gl.getAttribLocation(this.gl.program, 'a_TexCoord');
 
         // fog
-        this.u_Eye = this.gl.getUniformLocation(this.program, 'u_Eye');
         this.u_FogColor = this.gl.getUniformLocation(this.program, 'u_FogColor');
         this.u_FogDist = this.gl.getUniformLocation(this.program, 'u_FogDist');
 
@@ -169,12 +165,8 @@ class TextureLoader {
 
         // Pass the model view projection matrix to u_MvpMatrix
         this.gl.uniformMatrix4fv(this.u_MvpMatrix, false, this.mvpMatrix.elements);
-        this.gl.uniformMatrix4fv(this.u_ModelMatrix, false, this.g_modelMatrix.elements);
 
         // fog
-        // set eye
-        var eyes = Camera.eye.elements;
-        this.gl.uniform4f(this.u_Eye, eyes[0], eyes[1], eyes[2], 1.0);
         // set fog color and dist
         this.gl.uniform3fv(this.u_FogColor, new Vector3(fogColor).elements);
         this.gl.uniform2f(this.u_FogDist, fogDist[0], fogDist[1]);
