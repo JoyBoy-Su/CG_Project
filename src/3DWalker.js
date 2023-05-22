@@ -51,7 +51,7 @@ class SceneLoader {
 
     initWebGL() {
         // Set clear color and enable hidden surface removal
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        this.gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1.0);
 
         // Clear color and depth buffer
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);

@@ -218,3 +218,7 @@ var sceneDirectionLight = [0.35, 0.35, 0.87];
 //点光源的颜色，点光源的位置应当实时与相机位置（eye）相同
 var scenePointLightColor = [0.5, 0.5, 0.6];
 
+// 雾的颜色
+var fogColor = [0.7, 0.75, 0.75];
+// 雾的起始点距离
+var fogDist = [50, 80];
