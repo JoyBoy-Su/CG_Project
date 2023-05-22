@@ -221,4 +221,4 @@ var scenePointLightColor = [0.5, 0.5, 0.6];
 // 雾的颜色
 var fogColor = [0.7, 0.75, 0.75];
 // 雾的起始点距离
-var fogDist = [50, 80];
+var fogDist = [50, 150];

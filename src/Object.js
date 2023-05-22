@@ -42,27 +42,30 @@ class ObjectLoader {
         uniform mat4 u_MvpMatrix;
         uniform mat4 u_ModelMatrix;
         uniform mat4 u_NormalMatrix;
-        varying vec4 v_Color;
         uniform vec3 u_Color;
+        uniform vec4 u_Eye;
         uniform vec3 u_LightDirection;
         uniform vec3 u_AmbientLight;
         uniform vec3 u_LightPosition;
         uniform vec3 u_PointLightColor;
+        varying vec4 v_Color;
+        varying float v_Dist;
         void main() {
-          gl_Position = u_MvpMatrix * a_Position;
+            gl_Position = u_MvpMatrix * a_Position;
 
-          vec4 normal1 = u_NormalMatrix * a_Normal;
-          vec3 normal = normalize(normal1.xyz);
-          vec4 vertexPostion = u_ModelMatrix * a_Position;
-          vec3 pointLightDirection = normalize(u_LightPosition - vec3(vertexPostion));
+            vec4 normal1 = u_NormalMatrix * a_Normal;
+            vec3 normal = normalize(normal1.xyz);
+            vec4 vertexPostion = u_ModelMatrix * a_Position;
+            vec3 pointLightDirection = normalize(u_LightPosition - vec3(vertexPostion));
 
-          float nDotL1 = max(dot(u_LightDirection, normal), 0.0);
-          vec3 u_DiffuseLight = vec3(1.0, 1.0, 1.0);
-          float nDotL2 = max(dot(pointLightDirection, normal), 0.0);
-          vec3 diffuse = u_DiffuseLight * u_Color * nDotL1 + u_PointLightColor * u_Color * nDotL2;
-          vec3 ambient = u_AmbientLight * u_Color;
+            float nDotL1 = max(dot(u_LightDirection, normal), 0.0);
+            vec3 u_DiffuseLight = vec3(1.0, 1.0, 1.0);
+            float nDotL2 = max(dot(pointLightDirection, normal), 0.0);
+            vec3 diffuse = u_DiffuseLight * u_Color * nDotL1 + u_PointLightColor * u_Color * nDotL2;
+            vec3 ambient = u_AmbientLight * u_Color;
 
-          v_Color = vec4(diffuse + ambient, a_Color.a);
+            v_Color = vec4(diffuse + ambient, a_Color.a);
+            v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);
         }`;
 
         // Fragment shader program
@@ -70,9 +73,14 @@ class ObjectLoader {
         #ifdef GL_ES
         precision mediump float;
         #endif
+        uniform vec3 u_FogColor;
+        uniform vec2 u_FogDist;
         varying vec4 v_Color;
+        varying float v_Dist;
         void main() {
-          gl_FragColor = v_Color;
+            float fogFactor = clamp((u_FogDist.y - v_Dist) / (u_FogDist.y - u_FogDist.x), 0.0, 1.0);
+            vec3 color = mix(u_FogColor, vec3(v_Color), fogFactor);
+            gl_FragColor = vec4(color, v_Color.a);
         }`;
 
         // Initialize shaders
@@ -91,6 +99,10 @@ class ObjectLoader {
         this.u_MvpMatrix = this.gl.getUniformLocation(this.program, 'u_MvpMatrix');
         this.u_NormalMatrix = this.gl.getUniformLocation(this.program, 'u_NormalMatrix');
         this.u_ModelMatrix = this.gl.getUniformLocation(this.program, 'u_ModelMatrix');
+
+        this.u_Eye = this.gl.getUniformLocation(this.program, 'u_Eye');
+        this.u_FogColor = this.gl.getUniformLocation(this.program, 'u_FogColor');
+        this.u_FogDist = this.gl.getUniformLocation(this.program, 'u_FogDist');
 
         this.u_LightDirection = this.gl.getUniformLocation(this.program, 'u_LightDirection');
         this.u_AmbientLight = this.gl.getUniformLocation(this.program, 'u_AmbientLight');
@@ -177,6 +189,14 @@ class ObjectLoader {
         g_mvpMatrix.concat(this.g_modelMatrix);
 
         this.gl.uniformMatrix4fv(this.u_MvpMatrix, false, g_mvpMatrix.elements);
+        // fog
+        // set eye
+        var eyes = Camera.eye.elements;
+        this.gl.uniform4f(this.u_Eye, eyes[0], eyes[1], eyes[2], 1.0);
+        // set fog color and dist
+        this.gl.uniform3fv(this.u_FogColor, new Vector3(fogColor).elements);
+        this.gl.uniform2f(this.u_FogDist, fogDist[0], fogDist[1]);
+        
         // Draw
         this.gl.drawElements(this.gl.TRIANGLES, this.g_drawingInfo.indices.length, this.gl.UNSIGNED_SHORT, 0);
     }
