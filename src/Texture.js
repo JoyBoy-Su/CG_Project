@@ -36,7 +36,7 @@ class TextureLoader {
             void main() {
                 gl_Position = u_MvpMatrix * a_Position;
                 v_TexCoord = a_TexCoord;
-                v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);
+                v_Dist = gl_Position.w;
             }`;
 
         // Fragment shader program

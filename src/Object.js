@@ -65,7 +65,7 @@ class ObjectLoader {
             vec3 ambient = u_AmbientLight * u_Color;
 
             v_Color = vec4(diffuse + ambient, a_Color.a);
-            v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);
+            v_Dist = gl_Position.w;
         }`;
 
         // Fragment shader program

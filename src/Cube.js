@@ -31,7 +31,7 @@ class CubeLoader {
 
             void main() {
                 gl_Position = u_MvpMatrix * a_Position;
-                v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);
+                v_Dist = gl_Position.w;
                 v_Color = a_Color;
             }`;
 
