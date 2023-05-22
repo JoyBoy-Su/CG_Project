@@ -33,11 +33,24 @@ class SceneLoader {
 
         this.initLoaders();
 
+        this.initShadow();                  // init shadow(frame buffer)
+
         let render = (timestamp) => {
             this.initWebGL();
 
             this.initCamera(timestamp);
 
+            // shadow()
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, Shadow.framebuffer);    // 切换到帧缓冲区绘制
+            this.gl.viewport(0, 0, Shadow.OFFSCREEN_WIDTH, Shadow.OFFSCREEN_HEIGHT);
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+            for (let loader of this.loaders) {
+                loader.shadow(timestamp);
+            }
+            // render()
+            this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);               // 切换回颜色缓冲区
+            this.gl.viewport(0, 0, 500, 500);               // TODO: canvas.width and height
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
             for (let loader of this.loaders) {
                 loader.render(timestamp);
             }
@@ -98,15 +111,19 @@ class SceneLoader {
 
         let posY = (Camera.state.posRight - Camera.state.posLeft) * MOVE_VELOCITY * elapsed / 1000;
         let rotY = (Camera.state.rotRight - Camera.state.rotLeft) * ROT_VELOCITY * elapsed / 1000 / 180 * Math.PI;
-        
+
         if (posY) Camera.move(0, posY, this.position_text, this.lookat_text);
         if (rotY) Camera.rotate(0, rotY, this.position_text, this.lookat_text);
-        
+
         let posX = (Camera.state.posUp - Camera.state.posDown) * MOVE_VELOCITY * elapsed / 1000;
         let rotX = (Camera.state.rotUp - Camera.state.rotDown) * ROT_VELOCITY * elapsed / 1000 / 180 * Math.PI;
-        
+
         if (posX) Camera.move(posX, 0, this.position_text, this.lookat_text);
         if (rotX) Camera.rotate(rotX, 0, this.position_text, this.lookat_text);
+    }
+
+    initShadow() {
+        Shadow.init(this.gl);
     }
 
     initLoaders() {

@@ -34,6 +34,22 @@ class ObjectLoader {
     }
 
     initShaders() {
+        // 平行光正交投影下
+        var SHADOW_VSHADER_SOURCE =
+            'attribute vec4 a_Position;\n' +
+            'uniform mat4 u_MvpMatrixFromLight;\n' +
+            'void main() {\n' +
+            '  gl_Position = u_MvpMatrixFromLight * a_Position;\n' +
+            '}\n';
+        // 确定平行光正交投影下该点的z坐标（后续在真正绘制时，比该点z轴靠后的都为阴影部分）
+        var SHADOW_FSHADER_SOURCE =
+            '#ifdef GL_ES\n' +
+            'precision mediump float;\n' +
+            '#endif\n' +
+            'void main() {\n' +
+            '  gl_FragColor = vec4(gl_FragCoord.z, 0.0, 0.0, 0.0);\n' + // Write the z-value in R
+            '}\n';
+
         // Vertex shader program
         let VSHADER_SOURCE = `
         attribute vec4 a_Position;
@@ -47,6 +63,8 @@ class ObjectLoader {
         uniform vec3 u_AmbientLight;
         uniform vec3 u_LightPosition;
         uniform vec3 u_PointLightColor;
+        uniform mat4 u_MvpMatrixFromLight;
+        varying vec4 v_PositionFromLight;
         varying vec4 v_Color;
         varying float v_Dist;
         void main() {
@@ -65,6 +83,7 @@ class ObjectLoader {
 
             v_Color = vec4(diffuse + ambient, a_Color.a);
             v_Dist = gl_Position.w;
+            v_PositionFromLight = u_MvpMatrixFromLight * a_Position;
         }`;
 
         // Fragment shader program
@@ -74,12 +93,19 @@ class ObjectLoader {
         #endif
         uniform vec3 u_FogColor;
         uniform vec2 u_FogDist;
+        uniform sampler2D u_ShadowMap;
         varying vec4 v_Color;
         varying float v_Dist;
+        varying vec4 v_PositionFromLight;
         void main() {
+            vec3 shadowCoord = (v_PositionFromLight.xyz/v_PositionFromLight.w)/2.0 + 0.5;
+            vec4 rgbaDepth = texture2D(u_ShadowMap, shadowCoord.xy);
+            float depth = rgbaDepth.r;
+            float visibility = (shadowCoord.z > depth + 0.005) ? 0.7 : 1.0;
             float fogFactor = clamp((u_FogDist.y - v_Dist) / (u_FogDist.y - u_FogDist.x), 0.0, 1.0);
-            vec3 color = mix(u_FogColor, vec3(v_Color), fogFactor);
-            gl_FragColor = vec4(color, v_Color.a);
+            vec3 color1 = mix(u_FogColor, vec3(v_Color), fogFactor);
+            vec4 color2 = vec4(color1, v_Color.a);
+            gl_FragColor = vec4(color2.rgb * visibility, color2.a);
         }`;
 
         // Initialize shaders
@@ -88,25 +114,36 @@ class ObjectLoader {
             console.log('Failed to create program');
             return;
         }
+        this.shadowProgram = createProgram(this.gl, SHADOW_VSHADER_SOURCE, SHADOW_FSHADER_SOURCE);
+        if (!this.shadowProgram) {
+            console.log("Falied to create shadow program");
+            return;
+        }
 
         this.gl.enable(this.gl.DEPTH_TEST);
 
-        // Get the storage locations of attribute and uniform variables
+        // program
+        // attribute变量
         this.a_Position = this.gl.getAttribLocation(this.program, 'a_Position');
         this.a_Color = this.gl.getAttribLocation(this.program, 'a_Color');
         this.a_Normal = this.gl.getAttribLocation(this.program, 'a_Normal');
+        // uniform变量
         this.u_MvpMatrix = this.gl.getUniformLocation(this.program, 'u_MvpMatrix');
         this.u_NormalMatrix = this.gl.getUniformLocation(this.program, 'u_NormalMatrix');
         this.u_ModelMatrix = this.gl.getUniformLocation(this.program, 'u_ModelMatrix');
-
+        this.u_MvpMatrixFromLight = this.gl.getUniformLocation(this.program, 'u_MvpMatrixFromLight');
+        this.u_ShadowMap = this.gl.getUniformLocation(this.program, 'u_ShadowMap');
         this.u_FogColor = this.gl.getUniformLocation(this.program, 'u_FogColor');
         this.u_FogDist = this.gl.getUniformLocation(this.program, 'u_FogDist');
-
         this.u_LightDirection = this.gl.getUniformLocation(this.program, 'u_LightDirection');
         this.u_AmbientLight = this.gl.getUniformLocation(this.program, 'u_AmbientLight');
         this.u_LightPosition = this.gl.getUniformLocation(this.program, 'u_LightPosition');
         this.u_PointLightColor = this.gl.getUniformLocation(this.program, 'u_PointLightColor');
         this.u_Color = this.gl.getUniformLocation(this.program, 'u_Color');
+
+        // shadow program
+        this.a_PositionShadow = this.gl.getAttribLocation(this.shadowProgram, 'a_Position');
+        this.u_MvpMatrixFromLightShadow = this.gl.getUniformLocation(this.shadowProgram, 'u_MvpMatrixFromLight');
 
         this.gl.useProgram(this.program);
         this.gl.program = this.program;
@@ -154,6 +191,29 @@ class ObjectLoader {
         this.g_objDoc = objDoc;
     }
 
+    shadow(timestamp) {
+        // 切换program
+        // this.gl.useProgram(this.shadowProgram);
+        // // 初始化
+        // if (this.g_objDoc != null && this.g_objDoc.isMTLComplete()) {
+        //     this.onReadComplete();
+        // }
+        // if (!this.g_drawingInfo) return;
+
+        // if (this.hasOwnProperty('nextFrame')) {
+        //     this.nextFrame(timestamp);
+        //     this.initPerspective();
+        // }
+        // // 动画
+        // this.animate(timestamp);
+        // // 绑定平行光正交投影下的mvp矩阵
+        // this.mvpMatrixFromLightShadow = Shadow.getMatrix();
+        // this.mvpMatrixFromLightShadow.concat(this.g_modelMatrix);
+        // this.gl.uniformMatrix4fv(this.u_MvpMatrixFromLightShadow, false, this.mvpMatrixFromLightShadow.elements);
+        // // 绘制
+        // this.gl.drawElements(this.gl.TRIANGLES, this.g_drawingInfo.indices.length, this.gl.UNSIGNED_SHORT, 0);
+    }
+
     render(timestamp) {
         this.gl.useProgram(this.program);
         this.gl.program = this.program;
@@ -187,11 +247,17 @@ class ObjectLoader {
         g_mvpMatrix.concat(this.g_modelMatrix);
 
         this.gl.uniformMatrix4fv(this.u_MvpMatrix, false, g_mvpMatrix.elements);
-        // fog
-        // set fog color and dist
+        // fog相关
         this.gl.uniform3fv(this.u_FogColor, new Vector3(fogColor).elements);
         this.gl.uniform2f(this.u_FogDist, fogDist[0], fogDist[1]);
-        
+        // shadow相关
+        // mvp from light矩阵
+        this.mvpMatrixFromLight = Shadow.getMatrix();
+        this.mvpMatrixFromLight.concat(this.g_modelMatrix);
+        this.gl.uniformMatrix4fv(this.u_MvpMatrixFromLight, false, this.mvpMatrixFromLight.elements);
+        // shadow map
+        this.gl.uniform1i(this.program.u_ShadowMap, 0)
+
         // Draw
         this.gl.drawElements(this.gl.TRIANGLES, this.g_drawingInfo.indices.length, this.gl.UNSIGNED_SHORT, 0);
     }
@@ -206,7 +272,6 @@ class ObjectLoader {
 
         this.gl.vertexAttribPointer(this.a_Position, 3, this.gl.FLOAT, false, 0, 0);
         this.gl.enableVertexAttribArray(this.a_Position);
-
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.buffers.normalBuffer);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, this.g_drawingInfo.normals, this.gl.STATIC_DRAW);

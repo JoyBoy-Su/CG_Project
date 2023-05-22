@@ -222,3 +222,9 @@ var scenePointLightColor = [0.5, 0.5, 0.6];
 var fogColor = [0.7, 0.75, 0.75];
 // 雾的起始点距离
 var fogDist = [50, 80];
+
+// 帧缓冲区尺寸
+ShadowPara = {
+    OFFSCREEN_WIDTH: 100,
+    OFFSCREEN_HEIGHT: 100
+}
