@@ -75,7 +75,17 @@ class SceneLoader {
                 })
             });
         }
-        )
+        );
+
+        // point light
+        this.keyboardController.bind('f', {
+            on: (() => {
+                pointLight = 1;
+            }),
+            off: (() => {
+                pointLight = 0;
+            })
+        })
     }
 
     initCamera(timestamp) {
@@ -120,5 +130,5 @@ class SceneLoader {
         let cubeLoader = new CubeLoader(cubeRes, { 'gl': this.gl }).init();
         this.loaders.push(cubeLoader);
     }
-    
+
 }

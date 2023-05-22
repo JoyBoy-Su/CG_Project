@@ -1,5 +1,7 @@
 "use strict";
 
+var pointLight = 0;
+
 class ObjectLoader {
     constructor(entity, config) {
         this.gl = config.gl;
@@ -44,16 +46,20 @@ class ObjectLoader {
         uniform vec3 u_Color;
         uniform vec3 u_LightDirection;
         uniform vec3 u_AmbientLight;
+        uniform vec3 u_LightPosition;
+        uniform vec3 u_PointLightColor;
         void main() {
           gl_Position = u_MvpMatrix * a_Position;
 
           vec4 normal1 = u_NormalMatrix * a_Normal;
-
           vec3 normal = normalize(normal1.xyz);
+          vec4 vertexPostion = u_ModelMatrix * a_Position;
+          vec3 pointLightDirection = normalize(u_LightPosition - vec3(vertexPostion));
 
-          float nDotL = max(dot(u_LightDirection, normal), 0.0);
+          float nDotL1 = max(dot(u_LightDirection, normal), 0.0);
           vec3 u_DiffuseLight = vec3(1.0, 1.0, 1.0);
-          vec3 diffuse = u_DiffuseLight * u_Color * nDotL;
+          float nDotL2 = max(dot(pointLightDirection, normal), 0.0);
+          vec3 diffuse = u_DiffuseLight * u_Color * nDotL1 + u_PointLightColor * u_Color * nDotL2;
           vec3 ambient = u_AmbientLight * u_Color;
 
           v_Color = vec4(diffuse + ambient, a_Color.a);
@@ -88,6 +94,8 @@ class ObjectLoader {
 
         this.u_LightDirection = this.gl.getUniformLocation(this.program, 'u_LightDirection');
         this.u_AmbientLight = this.gl.getUniformLocation(this.program, 'u_AmbientLight');
+        this.u_LightPosition = this.gl.getUniformLocation(this.program, 'u_LightPosition');
+        this.u_PointLightColor = this.gl.getUniformLocation(this.program, 'u_PointLightColor');
         this.u_Color = this.gl.getUniformLocation(this.program, 'u_Color');
 
         this.gl.useProgram(this.program);
@@ -149,13 +157,15 @@ class ObjectLoader {
             this.nextFrame(timestamp);
             this.initPerspective();
         }
-        
+
         this.animate(timestamp);
 
-        let lightDirection = new Vector3([0.15, 0.15, 0.17]);
+        let lightDirection = new Vector3(sceneDirectionLight);
         lightDirection.normalize();
         this.gl.uniform3fv(this.u_LightDirection, lightDirection.elements);
-        this.gl.uniform3fv(this.u_AmbientLight, new Vector3([1.2, 1.2, 1.2]).elements);
+        this.gl.uniform3fv(this.u_AmbientLight, new Vector3(sceneAmbientLight).elements);
+        this.gl.uniform3fv(this.u_LightPosition, Camera.eye.elements);
+        this.gl.uniform3fv(this.u_PointLightColor, new Vector3(scenePointLightColor.map(x => x * pointLight)).elements);
         this.gl.uniform3fv(this.u_Color, new Vector3(this.entity.color).elements);
 
         this.g_normalMatrix.setInverseOf(this.g_modelMatrix);
