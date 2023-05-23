@@ -57,14 +57,19 @@ class ObjectLoader {
             vec3 normal = normalize(normal1.xyz);
             vec4 vertexPostion = u_ModelMatrix * a_Position;
             vec3 pointLightDirection = normalize(u_LightPosition - vec3(vertexPostion));
-
-            float nDotL1 = max(dot(u_LightDirection, normal), 0.0);
+            vec3 eyeDirection = normalize(u_Eye.xyz - vec3(vertexPostion));
+            vec3 halfLE = normalize(u_LightDirection + eyeDirection);
             vec3 u_DiffuseLight = vec3(1.0, 1.0, 1.0);
+
+            float nDotL0 = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);
+            float nDotL1 = max(dot(u_LightDirection, normal), 0.0);
             float nDotL2 = max(dot(pointLightDirection, normal), 0.0);
+            
+            vec3 specular = u_DiffuseLight * u_Color * nDotL0;
             vec3 diffuse = u_DiffuseLight * u_Color * nDotL1 + u_PointLightColor * u_Color * nDotL2;
             vec3 ambient = u_AmbientLight * u_Color;
 
-            v_Color = vec4(diffuse + ambient, a_Color.a);
+            v_Color = vec4(specular + diffuse + ambient, a_Color.a);
             v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);
         }`;
 
