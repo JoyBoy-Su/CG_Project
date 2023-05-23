@@ -59,6 +59,7 @@ class SceneLoader {
 
     initKeyController() {
         Camera.init();
+        Gumby.init();
         let cameraMap = new Map();
         cameraMap.set('a', 'posLeft');
         cameraMap.set('d', 'posRight');

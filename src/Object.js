@@ -3,6 +3,7 @@
 var pointLight = 0;
 
 class ObjectLoader {
+
     constructor(entity, config) {
         this.gl = config.gl;
         this.entity = entity;
@@ -253,11 +254,10 @@ class ObjectLoader {
         if (this.entity.objFilePath.indexOf('bird') > 0) {
             let elapsed = timestamp - this.last;
             this.last = timestamp;
-            this.g_modelMatrix = new Matrix4();
-            this.g_normalMatrix = new Matrix4();
             // rotate
             this.angle = (this.angle + elapsed * ROTATE_VELOCITY / 1000.0) % 360;
-            this.g_modelMatrix.rotate(this.angle, 0, 1, 0);
+            // get rotate
+            this.g_modelMatrix = Gumby.getMatrix(this.angle);
             // translate
             this.g_modelMatrix.translate(0, Math.sin(this.angle * Math.PI / 360) * HEIGHT_VELOCITY, 0);
             for (let t of this.entity.transform) {
