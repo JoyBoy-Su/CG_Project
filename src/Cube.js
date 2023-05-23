@@ -80,7 +80,7 @@ class CubeLoader {
         this.a_Position = this.gl.getAttribLocation(this.gl.program, 'a_Position');
         // Assign the buffer object to a_TexCoord variable and enable the assignment of the buffer object
         this.a_Color = this.gl.getAttribLocation(this.gl.program, 'a_Color');
-        
+
         this.g_normalMatrix = new Matrix4();
         this.g_modelMatrix = new Matrix4();
         this.g_modelMatrix.translate(this.entity.translate[0], this.entity.translate[1], this.entity.translate[2]);

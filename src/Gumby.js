@@ -13,12 +13,12 @@ class Gumby {
         Gumby.inverseMatrix = new Matrix4();
         Gumby.inverseMatrix.setInverseOf(Gumby.modelMatrix);
     }
-    
+
     static getMatrix(angle) {
         // 先逆变换回绕(0, 1, 0)转 inverse；绕(0, 1, 0)旋转angle rotate，再做一次变换model
         return new Matrix4().set(Gumby.modelMatrix)
-                            .rotate(angle, Gumby.axis[0], Gumby.axis[1], Gumby.axis[2])
-                            .concat(Gumby.inverseMatrix);
+            .rotate(angle, Gumby.axis[0], Gumby.axis[1], Gumby.axis[2])
+            .concat(Gumby.inverseMatrix);
     }
 
 }

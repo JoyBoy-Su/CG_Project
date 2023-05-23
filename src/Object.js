@@ -215,7 +215,7 @@ class ObjectLoader {
         // set fog color and dist
         this.gl.uniform3fv(this.u_FogColor, new Vector3(fogColor).elements);
         this.gl.uniform2f(this.u_FogDist, fogDist[0], fogDist[1]);
-        
+
         // Draw
         this.gl.drawElements(this.gl.TRIANGLES, this.g_drawingInfo.indices.length, this.gl.UNSIGNED_SHORT, 0);
     }
